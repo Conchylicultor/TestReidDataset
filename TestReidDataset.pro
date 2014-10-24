@@ -5,6 +5,10 @@ CONFIG -= qt
 
 QMAKE_CXXFLAGS += -std=c++11
 
-SOURCES += src/main.cpp
-
 LIBS += `pkg-config opencv --libs`
+
+SOURCES += src/main.cpp \
+    src/dataset.cpp
+
+HEADERS += \
+    src/dataset.h
