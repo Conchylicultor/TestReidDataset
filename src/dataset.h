@@ -29,6 +29,9 @@ public:
 
 private:
     list<Person> listPersons;
+
+    list<pair<string, string> > positiveSamples;
+    list<pair<string, string> > negativeSamples;// TODO: Add more informations (which cam,...), the informations can be found on a file personId.txt
 };
 
 #endif // DATASET_H

@@ -2,7 +2,7 @@
 #define PERSON_H
 
 #include <iostream>
-#include <list>
+#include <vector>
 #include <string>
 
 using namespace std;
@@ -15,10 +15,11 @@ public:
     string getName() const;
 
     void addImageId(const string &newId);
+    vector<string> getListImagesId() const;
 
 private:
     string name;
-    list<string> listImagesId;
+    vector<string> listImagesId;
 };
 
 #endif // PERSON_H

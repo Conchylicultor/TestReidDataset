@@ -14,3 +14,8 @@ void Person::addImageId(const string &newId)
     listImagesId.push_back(newId);
 }
 
+vector<string> Person::getListImagesId() const
+{
+    return listImagesId;
+}
+

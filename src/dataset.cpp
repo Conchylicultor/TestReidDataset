@@ -2,6 +2,8 @@
 
 #include <fstream>
 #include <regex>
+#include <algorithm>
+#include <cstdlib>
 
 bool replace(std::string& str, const std::string& from, const std::string& to)
 {
@@ -12,8 +14,25 @@ bool replace(std::string& str, const std::string& from, const std::string& to)
     return true;
 }
 
+template <class T>
+void randomizeList(list<T> &sortedList)
+{
+    vector<T> tempVector{ std::make_move_iterator(std::begin(sortedList)),
+                          std::make_move_iterator(std::end  (sortedList)) };
+
+    std::random_shuffle(tempVector.begin(), tempVector.end());
+
+    sortedList.clear();
+
+    std::copy(tempVector.begin(), tempVector.end(), std::back_inserter(sortedList));
+}
+
+
 Dataset::Dataset(string folderUrl)
 {
+    // Initialize the randomness
+    std::srand ( unsigned ( std::time(0) ) );
+
     ifstream fileListPersons(folderUrl + "traces.txt");
     if(!fileListPersons.is_open())
     {
@@ -62,7 +81,36 @@ Dataset::Dataset(string folderUrl)
 
 void Dataset::selectPairs()
 {
+    // Training pairs
+    randomizeList(listPersons);
 
+    // Positives sample
+
+    // For each person...
+    for(Person &iter : listPersons) // TODO: Not browse the entire list
+    {
+        // ... select some random pairs
+        cout << iter.getName() << endl;
+        for(int i = 0 ; i < 10 ; ++i) // TODO: Replace the arbitrary choosen number
+        {
+            int number1 = std::rand() % iter.getListImagesId().size();
+            int number2 = std::rand() % iter.getListImagesId().size();
+
+            // TODO: Check that the couple has not been selected yet
+            if(number1 != number2)
+            {
+                positiveSamples.push_back(pair<string, string> (iter.getListImagesId().at(number1),
+                                                                iter.getListImagesId().at(number2)));
+            }
+        }
+    }
+
+    for (auto iter : positiveSamples)
+    {
+        cout << iter.first << " " << iter.second << endl;
+    }
+
+    // Testing pairs
 }
 
 void Dataset::computeFeatures()
