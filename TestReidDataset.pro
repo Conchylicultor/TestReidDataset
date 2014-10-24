@@ -8,7 +8,9 @@ QMAKE_CXXFLAGS += -std=c++11
 LIBS += `pkg-config opencv --libs`
 
 SOURCES += src/main.cpp \
-    src/dataset.cpp
+    src/dataset.cpp \
+    src/person.cpp
 
 HEADERS += \
-    src/dataset.h
+    src/dataset.h \
+    src/person.h

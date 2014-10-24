@@ -1,6 +1,8 @@
 #ifndef DATASET_H
 #define DATASET_H
 
+#include "person.h"
+
 #include <iostream>
 #include "opencv2/opencv.hpp"
 
@@ -23,6 +25,9 @@ public:
 
     // Test and plot results
     void test();
+
+private:
+    list<Person> listPersons;
 };
 
 #endif // DATASET_H
