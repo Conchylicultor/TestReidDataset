@@ -12,6 +12,7 @@ using namespace cv;
 class Dataset
 {
 public:
+    // Loading persons
     Dataset(string folderUrl);
 
     // Choose randomly the training/testing sets

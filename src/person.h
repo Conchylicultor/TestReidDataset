@@ -10,7 +10,11 @@ using namespace std;
 class Person
 {
 public:
-    Person();
+    Person(const string &namePerson);
+
+    string getName() const;
+
+    void addImageId(const string &newId);
 
 private:
     string name;
