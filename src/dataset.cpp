@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstdlib>
 
+#define NB_SELECTED_PAIR 10
+
 bool replace(std::string& str, const std::string& from, const std::string& to)
 {
     size_t start_pos = str.find(from);
@@ -14,21 +16,9 @@ bool replace(std::string& str, const std::string& from, const std::string& to)
     return true;
 }
 
-template <class T>
-void randomizeList(list<T> &sortedList)
-{
-    vector<T> tempVector{ std::make_move_iterator(std::begin(sortedList)),
-                          std::make_move_iterator(std::end  (sortedList)) };
 
-    std::random_shuffle(tempVector.begin(), tempVector.end());
-
-    sortedList.clear();
-
-    std::copy(tempVector.begin(), tempVector.end(), std::back_inserter(sortedList));
-}
-
-
-Dataset::Dataset(string folderUrl)
+Dataset::Dataset(string folderUrl_) :
+    folderUrl(folderUrl_)
 {
     // Initialize the randomness
     std::srand ( unsigned ( std::time(0) ) );
@@ -81,17 +71,16 @@ Dataset::Dataset(string folderUrl)
 
 void Dataset::selectPairs()
 {
+    // TODO: Divide the listPersons between training and testing set
+
     // Training pairs
-    randomizeList(listPersons);
+    std::random_shuffle(listPersons.begin(), listPersons.end());
 
     // Positives sample
-
-    // For each person...
-    for(Person &iter : listPersons) // TODO: Not browse the entire list
+    for(Person &iter : listPersons) // For each person...
     {
         // ... select some random pairs
-        cout << iter.getName() << endl;
-        for(int i = 0 ; i < 10 ; ++i) // TODO: Replace the arbitrary choosen number
+        for(int i = 0 ; i < NB_SELECTED_PAIR ; ++i) // TODO ?: Replace the arbitrary choosen number ?
         {
             int number1 = std::rand() % iter.getListImagesId().size();
             int number2 = std::rand() % iter.getListImagesId().size();
@@ -102,13 +91,104 @@ void Dataset::selectPairs()
                 positiveSamples.push_back(pair<string, string> (iter.getListImagesId().at(number1),
                                                                 iter.getListImagesId().at(number2)));
             }
+            else
+            {
+                --i; // Numbers are equal, does not count
+            }
         }
     }
 
-    for (auto iter : positiveSamples)
+    // Negative sample
+    for(int i = 0 ; i < listPersons.size() * 2 ; ++i)
+    {
+        // Selection of two different persons
+        int numberPers1 = std::rand() % listPersons.size();
+        int numberPers2 = std::rand() % listPersons.size();
+
+        if(numberPers1 != numberPers2)
+        {
+            for(int j = 0 ; j < NB_SELECTED_PAIR/2 ; ++j)
+            {
+                int number1 = std::rand() % listPersons.at(numberPers1).getListImagesId().size();
+                int number2 = std::rand() % listPersons.at(numberPers2).getListImagesId().size();
+
+                // TODO: Check that the couple has not been selected yet
+                negativeSamples.push_back(pair<string, string> (listPersons.at(numberPers1).getListImagesId().at(number1),
+                                                                listPersons.at(numberPers2).getListImagesId().at(number2)));
+            }
+        }
+        else
+        {
+            --i; // Numbers are equal, does not count
+        }
+    }
+
+    /*for (auto iter : positiveSamples)
     {
         cout << iter.first << " " << iter.second << endl;
     }
+    cout << "iter.first <<  << iter.second" << endl;
+
+    for (auto iter : negativeSamples)
+    {
+        cout << iter.first << " " << iter.second << endl;
+    }
+
+    for(auto iter : positiveSamples)
+    {
+        Mat img1 = imread(folderUrl + iter.first + ".png");
+        Mat img2 = imread(folderUrl + iter.second + ".png");
+
+        //if fail to read the image
+        if (img1.empty() || img2.empty())
+        {
+            cout << "Error loading images" << endl;
+            exit(0);
+        }
+
+        //show the image
+        imshow("Img1", img1);
+        imshow("Img2", img2);
+
+        // Wait until user press some key
+        char key = waitKey(0);
+        if(key == 32) // Spacebar
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    for(auto iter : negativeSamples)
+    {
+        Mat img1 = imread(folderUrl + iter.first + ".png");
+        Mat img2 = imread(folderUrl + iter.second + ".png");
+
+        //if fail to read the image
+        if (img1.empty() || img2.empty())
+        {
+            cout << "Error loading images" << endl;
+            exit(0);
+        }
+
+        //show the image
+        imshow("Img1", img1);
+        imshow("Img2", img2);
+
+        // Wait until user press some key
+        char key = waitKey(0);
+        if(key == 32) // Spacebar
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }*/
 
     // Testing pairs
 }

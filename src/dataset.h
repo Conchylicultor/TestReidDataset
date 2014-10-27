@@ -13,7 +13,7 @@ class Dataset
 {
 public:
     // Loading persons
-    Dataset(string folderUrl);
+    Dataset(string folderUrl_);
 
     // Choose randomly the training/testing sets
     void selectPairs();
@@ -28,7 +28,8 @@ public:
     void test();
 
 private:
-    list<Person> listPersons;
+    string folderUrl;
+    vector<Person> listPersons;
 
     list<pair<string, string> > positiveSamples;
     list<pair<string, string> > negativeSamples;// TODO: Add more informations (which cam,...), the informations can be found on a file personId.txt
