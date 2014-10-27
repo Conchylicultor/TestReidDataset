@@ -2,10 +2,13 @@
 
 #include <fstream>
 #include <regex>
+#include <array>
 #include <algorithm>
 #include <cstdlib>
 
 #define NB_SELECTED_PAIR 10
+
+#define HIST_SIZE 100
 
 bool replace(std::string& str, const std::string& from, const std::string& to)
 {
@@ -88,8 +91,9 @@ void Dataset::selectPairs()
             // TODO: Check that the couple has not been selected yet
             if(number1 != number2)
             {
-                positiveSamples.push_back(pair<string, string> (iter.getListImagesId().at(number1),
-                                                                iter.getListImagesId().at(number2)));
+                listSamples.push_back(PairSample{iter.getListImagesId().at(number1),
+                                                 iter.getListImagesId().at(number2),
+                                                 true});
             }
             else
             {
@@ -99,7 +103,7 @@ void Dataset::selectPairs()
     }
 
     // Negative sample
-    for(int i = 0 ; i < listPersons.size() * 2 ; ++i)
+    for(size_t i = 0 ; i < listPersons.size() * 2 ; ++i)
     {
         // Selection of two different persons
         int numberPers1 = std::rand() % listPersons.size();
@@ -113,8 +117,9 @@ void Dataset::selectPairs()
                 int number2 = std::rand() % listPersons.at(numberPers2).getListImagesId().size();
 
                 // TODO: Check that the couple has not been selected yet
-                negativeSamples.push_back(pair<string, string> (listPersons.at(numberPers1).getListImagesId().at(number1),
-                                                                listPersons.at(numberPers2).getListImagesId().at(number2)));
+                listSamples.push_back(PairSample{listPersons.at(numberPers1).getListImagesId().at(number1),
+                                                 listPersons.at(numberPers2).getListImagesId().at(number2),
+                                                 false});
             }
         }
         else
@@ -123,79 +128,68 @@ void Dataset::selectPairs()
         }
     }
 
-    /*for (auto iter : positiveSamples)
-    {
-        cout << iter.first << " " << iter.second << endl;
-    }
-    cout << "iter.first <<  << iter.second" << endl;
-
-    for (auto iter : negativeSamples)
-    {
-        cout << iter.first << " " << iter.second << endl;
-    }
-
-    for(auto iter : positiveSamples)
-    {
-        Mat img1 = imread(folderUrl + iter.first + ".png");
-        Mat img2 = imread(folderUrl + iter.second + ".png");
-
-        //if fail to read the image
-        if (img1.empty() || img2.empty())
-        {
-            cout << "Error loading images" << endl;
-            exit(0);
-        }
-
-        //show the image
-        imshow("Img1", img1);
-        imshow("Img2", img2);
-
-        // Wait until user press some key
-        char key = waitKey(0);
-        if(key == 32) // Spacebar
-        {
-            continue;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    for(auto iter : negativeSamples)
-    {
-        Mat img1 = imread(folderUrl + iter.first + ".png");
-        Mat img2 = imread(folderUrl + iter.second + ".png");
-
-        //if fail to read the image
-        if (img1.empty() || img2.empty())
-        {
-            cout << "Error loading images" << endl;
-            exit(0);
-        }
-
-        //show the image
-        imshow("Img1", img1);
-        imshow("Img2", img2);
-
-        // Wait until user press some key
-        char key = waitKey(0);
-        if(key == 32) // Spacebar
-        {
-            continue;
-        }
-        else
-        {
-            break;
-        }
-    }*/
-
     // Testing pairs
 }
 
 void Dataset::computeFeatures()
 {
+    std::random_shuffle(listSamples.begin(), listSamples.end());
 
+    //trainingData.reserve();
+    //trainingClasses;
+
+    for(PairSample iter : listSamples)
+    {
+        // Read images
+        Mat imgPers1     = imread(folderUrl + iter.first + ".png");
+        Mat imgMaskPers1 = imread(folderUrl + iter.first + "_mask.png");
+
+        Mat imgPers2     = imread(folderUrl + iter.second + ".png");
+        Mat imgMaskPers2 = imread(folderUrl + iter.second + "_mask.png");
+
+
+        if (imgPers1.empty() || imgPers2.empty() || imgMaskPers1.empty() || imgMaskPers2.empty())
+        {
+            cout << "Error: cannot loading images" << endl;
+            cout << "    " << iter.first << endl;
+            cout << "    " << iter.second << endl;
+            continue;
+        }
+
+        cvtColor(imgMaskPers1,imgMaskPers1,CV_BGR2GRAY);
+        threshold(imgMaskPers1, imgMaskPers1, 254, 255, THRESH_BINARY);
+
+        cvtColor(imgMaskPers2,imgMaskPers2,CV_BGR2GRAY);
+        threshold(imgMaskPers2, imgMaskPers2, 254, 255, THRESH_BINARY);
+
+        // Compute features for each person
+
+        array<Mat, 3> histogramChannelsPers1;
+        array<Mat, 3> histogramChannelsPers2;
+        histRGB(imgPers1, imgMaskPers1, histogramChannelsPers1);
+        histRGB(imgPers2, imgMaskPers2, histogramChannelsPers2);
+
+        // Compute distance and add feature vector to the training set
+        Mat rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
+
+        rowFeatureVector.at<float>(0,0) = compareHist(histogramChannelsPers1.at(0), histogramChannelsPers2.at(0), CV_COMP_BHATTACHARYYA);
+        rowFeatureVector.at<float>(0,1) = compareHist(histogramChannelsPers1.at(1), histogramChannelsPers2.at(1), CV_COMP_BHATTACHARYYA);
+        rowFeatureVector.at<float>(0,2) = compareHist(histogramChannelsPers1.at(2), histogramChannelsPers2.at(2), CV_COMP_BHATTACHARYYA);
+
+
+        Mat rowClass = cv::Mat::ones(1, 1, CV_32FC1);
+        if(iter.samePerson)
+        {
+            rowClass.at<float>(0,0) = 1;
+        }
+        else
+        {
+            rowClass.at<float>(0,0) = -1;
+        }
+
+        trainingData.push_back(rowFeatureVector);
+        trainingClasses.push_back(rowClass);
+    }
 }
 
 void Dataset::train()
@@ -206,4 +200,24 @@ void Dataset::train()
 void Dataset::test()
 {
 
+}
+
+
+void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)
+{
+    // Conversion to the right color space ???
+    // Size of the histogram
+    int histSize = HIST_SIZE; // bin size
+    float range[] = {0, 256}; // min max values
+    const float *ranges[] = {range};
+    // Extraction of the histograms
+    std::vector<cv::Mat> sourceChannels;
+    cv::split(frame, sourceChannels);
+    cv::calcHist(&sourceChannels[0], 1, 0, fgMask, histogramChannels[0], 1, &histSize, ranges, true, false );
+    cv::calcHist(&sourceChannels[1], 1, 0, fgMask, histogramChannels[1], 1, &histSize, ranges, true, false );
+    cv::calcHist(&sourceChannels[2], 1, 0, fgMask, histogramChannels[2], 1, &histSize, ranges, true, false );
+    // Normalize
+    normalize(histogramChannels[0], histogramChannels[0]);
+    normalize(histogramChannels[1], histogramChannels[1]);
+    normalize(histogramChannels[2], histogramChannels[2]);
 }

@@ -9,6 +9,13 @@
 using namespace std;
 using namespace cv;
 
+struct PairSample
+{
+    string first;
+    string second;
+    bool samePerson;
+};
+
 class Dataset
 {
 public:
@@ -31,8 +38,15 @@ private:
     string folderUrl;
     vector<Person> listPersons;
 
-    list<pair<string, string> > positiveSamples;
-    list<pair<string, string> > negativeSamples;// TODO: Add more informations (which cam,...), the informations can be found on a file personId.txt
+    // TODO: Pre-allocation
+    vector<PairSample> listSamples;// TODO: Add more informations (which cam,...), the informations can be found on a file personId.txt
+
+    void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
+
+    cv::Mat trainingData;
+    cv::Mat trainingClasses;
+
+    cv::Mat testData;
 };
 
 #endif // DATASET_H

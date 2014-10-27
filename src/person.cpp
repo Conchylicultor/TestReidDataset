@@ -4,6 +4,7 @@ Person::Person(const string &namePerson) :
     name(namePerson)
 {
 }
+
 string Person::getName() const
 {
     return name;
