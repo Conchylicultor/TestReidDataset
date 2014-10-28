@@ -138,8 +138,12 @@ void Dataset::computeFeatures()
     //trainingData.reserve();
     //trainingClasses;
 
-    for(PairSample iter : listSamples)
+    //for(PairSample iter : listSamples)
+    //{
+    for(size_t i = 0 ; i < listSamples.size() ; ++i)
     {
+        PairSample &iter = listSamples.at(i);
+
         // Read images
         Mat imgPers1     = imread(folderUrl + iter.first + ".png");
         Mat imgMaskPers1 = imread(folderUrl + iter.first + "_mask.png");
@@ -187,19 +191,94 @@ void Dataset::computeFeatures()
             rowClass.at<float>(0,0) = -1;
         }
 
-        trainingData.push_back(rowFeatureVector);
-        trainingClasses.push_back(rowClass);
+        if(i > listSamples.size()/2)
+        {
+            trainingData.push_back(rowFeatureVector);
+            trainingClasses.push_back(rowClass);
+        }
+        else
+        {
+            testData.push_back(rowFeatureVector);
+        }
     }
 }
 
 void Dataset::train()
 {
+    trainSVM();
+}
 
+void Dataset::trainSVM()
+{
+    // TODO: Modify params
+    CvSVMParams param = CvSVMParams();
+
+    param.svm_type = CvSVM::C_SVC;
+    param.kernel_type = CvSVM::RBF; //CvSVM::RBF, CvSVM::LINEAR ...
+    param.degree = 0; // for poly
+    param.gamma = 20; // for poly/rbf/sigmoid
+    param.coef0 = 0; // for poly/sigmoid
+
+    param.C = 7; // for CV_SVM_C_SVC, CV_SVM_EPS_SVR and CV_SVM_NU_SVR
+    param.nu = 0.0; // for CV_SVM_NU_SVC, CV_SVM_ONE_CLASS, and CV_SVM_NU_SVR
+    param.p = 0.0; // for CV_SVM_EPS_SVR
+
+    param.class_weights = NULL; // for CV_SVM_C_SVC
+    param.term_crit.type = CV_TERMCRIT_ITER + CV_TERMCRIT_EPS;
+    param.term_crit.max_iter = 1000;
+    param.term_crit.epsilon = 1e-6;
+
+    // SVM training (use train auto for OpenCV>=2.0)
+    //CvSVM svm(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
+    svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
 }
 
 void Dataset::test()
 {
+    float nbTrue = 0.0;
+    float nbFalse = 0.0;
+    for(int i = 0; i < testData.rows; i++)
+    {
+        cv::Mat sample = testData.row(i);
 
+        float response = svm.predict(sample);
+
+        if((response == 1  && listSamples.at(i).samePerson) ||
+           (response == -1 && !listSamples.at(i).samePerson) )
+        {
+            nbTrue = nbTrue + 1.0;
+        }
+        else
+        {
+            nbFalse = nbFalse + 1.0;
+
+            /*PairSample &iter = listSamples.at(i);
+
+            Mat img1 = imread(folderUrl + iter.first + ".png");
+            Mat img2 = imread(folderUrl + iter.second + ".png");
+
+            //if fail to read the image
+            if (img1.empty() || img2.empty())
+            {
+                cout << "Error loading images" << endl;
+                exit(0);
+            }
+
+            //show the image
+            cout << response << endl;
+            imshow("Img1", img1);
+            imshow("Img2", img2);
+
+            // Wait until user press some key
+            char key = waitKey(0);
+            if(key == 32) // Spacebar
+            {
+                continue;
+            }*/
+        }
+    }
+    cout << "Results: " << nbTrue/(nbTrue+nbFalse)*100.0 << "%" << endl;
+    cout << "F:" << nbFalse << " T:" << nbTrue << endl;
 }
 
 

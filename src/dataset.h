@@ -47,6 +47,9 @@ private:
     cv::Mat trainingClasses;
 
     cv::Mat testData;
+
+    CvSVM svm;
+    void trainSVM();
 };
 
 #endif // DATASET_H
