@@ -9,8 +9,10 @@ LIBS += `pkg-config opencv --libs`
 
 SOURCES += src/main.cpp \
     src/dataset.cpp \
-    src/person.cpp
+    src/person.cpp \
+    src/adaptativedatabase.cpp
 
 HEADERS += \
     src/dataset.h \
-    src/person.h
+    src/person.h \
+    src/adaptativedatabase.h

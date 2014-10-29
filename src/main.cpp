@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "dataset.h"
+#include "adaptativedatabase.h"
 
 using namespace std;
 
@@ -8,7 +9,7 @@ using namespace std;
 
 int main()
 {
-    cout << "_________________________________" << endl;
+    /*cout << "_________________________________" << endl;
     cout << "Loading dataset..." << endl;
 
     Dataset dataset("/home/etienne/__A__/Data/Dataset/Set_1/");
@@ -35,7 +36,9 @@ int main()
     cout << "Testing..." << endl;
 
     // Test and plot results
-    dataset.test();
+    dataset.test();*/
+
+    AdaptativeDatabase("/home/etienne/__A__/Data/Dataset/Set_1/");
 
     return 0;
 }
