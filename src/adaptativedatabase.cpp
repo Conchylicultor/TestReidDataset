@@ -1,8 +1,11 @@
 #include "adaptativedatabase.h"
 
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include <ctime>
+
+#define HIST_SIZE 100
 
 AdaptativeDatabase::AdaptativeDatabase(string folderUrl_) :
     folderUrl(folderUrl_)
@@ -52,5 +55,64 @@ void AdaptativeDatabase::main()
 {
     // Process:
 
-    // Read/load the new sequence
+    bool newPers(true);
+    for(vector<string> currentSequence : listSequence)
+    {
+        // Read/load the new sequence
+
+        // TODO: Selection only some images
+        vector<featuresElement> listSequence;
+        listSequence.reserve(currentSequence.size());
+
+        for(string currentIdString : currentSequence)
+        {
+            Mat img = imread(folderUrl + currentIdString + ".png");
+            Mat mask = imread(folderUrl + currentIdString + "_mask.png");
+
+            if (img.empty() || mask.empty())
+            {
+                cout << "Error: cannot loading images (id=" << currentIdString << ")" << endl;
+                continue;
+            }
+
+            cvtColor(mask, mask,CV_BGR2GRAY);
+            threshold(mask, mask, 254, 255, THRESH_BINARY);
+
+
+            listSequence.push_back(featuresElement());
+
+            histRGB(img, mask, listSequence.back().histogramChannels);
+        }
+
+        // Select persons on the database and compute distance
+
+        if(newPers)
+        {
+            // Add the new person to the database
+        }
+        else
+        {
+            // Update the match
+        }
+        // TODO: Manualy label the person if wrong
+    }
+}
+
+void AdaptativeDatabase::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)
+{
+    // Conversion to the right color space ???
+    // Size of the histogram
+    int histSize = HIST_SIZE; // bin size
+    float range[] = {0, 256}; // min max values
+    const float *ranges[] = {range};
+    // Extraction of the histograms
+    std::vector<cv::Mat> sourceChannels;
+    cv::split(frame, sourceChannels);
+    cv::calcHist(&sourceChannels[0], 1, 0, fgMask, histogramChannels[0], 1, &histSize, ranges, true, false );
+    cv::calcHist(&sourceChannels[1], 1, 0, fgMask, histogramChannels[1], 1, &histSize, ranges, true, false );
+    cv::calcHist(&sourceChannels[2], 1, 0, fgMask, histogramChannels[2], 1, &histSize, ranges, true, false );
+    // Normalize
+    normalize(histogramChannels[0], histogramChannels[0]);
+    normalize(histogramChannels[1], histogramChannels[1]);
+    normalize(histogramChannels[2], histogramChannels[2]);
 }

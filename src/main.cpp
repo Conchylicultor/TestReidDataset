@@ -38,7 +38,10 @@ int main()
     // Test and plot results
     dataset.test();*/
 
-    AdaptativeDatabase("/home/etienne/__A__/Data/Dataset/Set_1/");
+    cout << "Launch..." << endl;
+    AdaptativeDatabase adaptativeDb("/home/etienne/__A__/Data/Dataset/Set_1/");
+    adaptativeDb.main();
+    cout << "... End of processing" << endl;
 
     return 0;
 }

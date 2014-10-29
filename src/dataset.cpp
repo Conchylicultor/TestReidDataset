@@ -231,6 +231,11 @@ void Dataset::trainSVM()
     // SVM training (use train auto for OpenCV>=2.0)
     //CvSVM svm(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
     svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
+
+    /*FileStorage fileTraining(folderUrl + "training.yml", FileStorage::WRITE);
+
+    fileTraining << "trainingData" << trainingData;
+    fileTraining << "trainingClasses" << trainingClasses;*/
 }
 
 void Dataset::test()
