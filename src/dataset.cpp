@@ -228,14 +228,15 @@ void Dataset::trainSVM()
     param.term_crit.max_iter = 1000;
     param.term_crit.epsilon = 1e-6;
 
-    // SVM training (use train auto for OpenCV>=2.0)
-    //CvSVM svm(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
     svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
 
     /*FileStorage fileTraining(folderUrl + "training.yml", FileStorage::WRITE);
 
     fileTraining << "trainingData" << trainingData;
-    fileTraining << "trainingClasses" << trainingClasses;*/
+    fileTraining << "trainingClasses" << trainingClasses;
+
+    fileTraining.release();*/
+
 }
 
 void Dataset::test()

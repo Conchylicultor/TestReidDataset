@@ -8,9 +8,17 @@
 using namespace std;
 using namespace cv;
 
-struct featuresElement
+struct FeaturesElement
 {
     array<Mat, 3> histogramChannels;
+};
+
+struct PersonElement
+{
+    vector<FeaturesElement> features;
+    float thresholdValue;
+
+    vector<string> sampleImages; // For testing and debuging, to plot the person
 };
 
 class AdaptativeDatabase
@@ -25,8 +33,13 @@ private:
 
     vector<vector<string>> listSequence;
 
+    vector<PersonElement> listDatabase;
+
     // Compute features
     void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
+
+    void loadMachineLearning();
+    CvSVM svm;
 };
 
 #endif // ADAPTATIVEDATABASE_H
