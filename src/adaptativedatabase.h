@@ -19,6 +19,14 @@ struct PersonElement
     float thresholdValue;
 
     vector<string> sampleImages; // For testing and debuging, to plot the person
+
+    string name;
+};
+
+struct SequenceElement
+{
+    vector<string> listFrameIds;
+    string name;
 };
 
 class AdaptativeDatabase
@@ -31,7 +39,7 @@ public:
 private:
     string folderUrl;
 
-    vector<vector<string>> listSequence;
+    vector<SequenceElement> listSequence;
 
     vector<PersonElement> listDatabase;
 
@@ -40,6 +48,11 @@ private:
 
     void loadMachineLearning();
     CvSVM svm;
+
+    float distance(const FeaturesElement &elem1, const FeaturesElement &elem2);
+
+    void debugShowImgs(const vector<string> &idsImgs, int nbPos);
+
 };
 
 #endif // ADAPTATIVEDATABASE_H

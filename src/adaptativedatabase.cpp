@@ -1,11 +1,16 @@
 #include "adaptativedatabase.h"
 
 #include <iostream>
-#include <vector>
 #include <fstream>
+#include <vector>
 #include <ctime>
 
+#include "utils.h"
+
 #define HIST_SIZE 100
+static const size_t minSequenceSize = 5;
+static const int nbInitialisationPairs = 10;
+static const int nbTestingPairs = 10;
 
 AdaptativeDatabase::AdaptativeDatabase(string folderUrl_) :
     folderUrl(folderUrl_)
@@ -22,13 +27,17 @@ AdaptativeDatabase::AdaptativeDatabase(string folderUrl_) :
 
     // /!\ Warning: No verification on the file structure (can be corrupted)
 
+    string currentPersName;
+
     int lastSequenceNumber(0);
     for(string line; std::getline(fileListPersons, line); )
     {
         // If new group of image
         if(line.find("-----") != std::string::npos)
         {
-            // Ignoring the line
+            utils::replace(line, "----- ", "");
+            utils::replace(line, " -----", "");
+            currentPersName = line;
         }
         // Otherwise, match the sequence
         else
@@ -41,10 +50,12 @@ AdaptativeDatabase::AdaptativeDatabase(string folderUrl_) :
 
             if(seqIdNum > lastSequenceNumber)// New sequence
             {
-                listSequence.push_back(vector<string>());
+                listSequence.push_back(SequenceElement());
+                listSequence.back().name = currentPersName;
                 lastSequenceNumber = seqIdNum;
             }
-            listSequence.back().push_back(line);
+            listSequence.back().listFrameIds.push_back(line);
+            // TODO: Add also the real result: listIdentity.back().push_back(namePerson)
         }
     }
 
@@ -59,15 +70,22 @@ void AdaptativeDatabase::main()
     // Process:
     std::random_shuffle(listSequence.begin(), listSequence.end());
 
-    for(vector<string> currentSequence : listSequence)
+    for(SequenceElement currentSequence : listSequence)
     {
+        cout << "--------------------------------------" << endl;
+        if(currentSequence.listFrameIds.size() < minSequenceSize)
+        {
+            cout << "Pb: Not enougth pairs for the current sequence. Cannot add it " << currentSequence.listFrameIds.at(0) << endl;
+            continue;
+        }
+
         // Read/load the new sequence
 
         // TODO: Selection only some images and not the complete sequence
-        vector<FeaturesElement> listSequence;
-        listSequence.reserve(currentSequence.size());
+        vector<FeaturesElement> listSequenceFeatures;
+        listSequenceFeatures.reserve(currentSequence.listFrameIds.size());
 
-        for(string currentIdString : currentSequence)
+        for(string currentIdString : currentSequence.listFrameIds)
         {
             Mat img = imread(folderUrl + currentIdString + ".png");
             Mat mask = imread(folderUrl + currentIdString + "_mask.png");
@@ -82,9 +100,9 @@ void AdaptativeDatabase::main()
             threshold(mask, mask, 254, 255, THRESH_BINARY);// Convert to binary
 
 
-            listSequence.push_back(FeaturesElement());
+            listSequenceFeatures.push_back(FeaturesElement());
 
-            histRGB(img, mask, listSequence.back().histogramChannels);
+            histRGB(img, mask, listSequenceFeatures.back().histogramChannels);
         }
 
         bool newPers(true);
@@ -92,20 +110,93 @@ void AdaptativeDatabase::main()
         // Select persons on the database and compute distance
         for(PersonElement currentPerson : listDatabase)
         {
+            float thresholdValue = 0.0;
+
+            for(int i = 0 ; i < nbTestingPairs ; ++i)
+            {
+                int number1 = std::rand() % listSequenceFeatures.size();
+                int number2 = std::rand() % currentPerson.features.size();
+
+                if(number1 != number2)
+                {
+                    thresholdValue += distance(listSequenceFeatures.at(number1),
+                                               currentPerson.features.at(number2));
+                }
+                else
+                {
+                    --i;
+                }
+            }
+
+            thresholdValue /= nbTestingPairs;
+
+            // Depending of the thresholdValue, reid or not
+            if(thresholdValue > 0.5)
+            {
+                cout << "Match (" << thresholdValue << ") : " << currentPerson.name;
+                newPers = false;
+
+                if (currentPerson.name != currentSequence.name)
+                {
+                    cout << " <<< ERROR";
+                }
+                cout << endl;
+            }
+            else
+            {
+                cout << "Diff (" << thresholdValue << ")";
+
+                if (currentPerson.name == currentSequence.name)
+                {
+                    cout << " <<< ERROR";
+                }
+                cout << endl;
+            }
+
+            debugShowImgs(currentSequence.listFrameIds, 0);
+            debugShowImgs(currentPerson.sampleImages, 1);
+            cv::waitKey(0);
         }
 
         if(newPers)
         {
+            // Compute the threshold value
+            // We select random pairs, we compute the distance and deduce the medium class
+            float thresholdValue = 0.0;
+
+            // Threshold value not reliable
+            /*for(int i = 0 ; i < nbInitialisationPairs ; ++i)
+            {
+                int number1 = std::rand() % listSequenceFeatures.size();
+                int number2 = std::rand() % listSequenceFeatures.size();
+
+                // TODO: Check that the couple has not been selected yet
+                if(number1 != number2)
+                {
+                    //listSequenceFeatures.at(number1);
+                    // !!!!!!!!!!!!!!
+                    thresholdValue += distance(listSequenceFeatures.at(number1), listSequenceFeatures.at(number2));
+                }
+                else
+                {
+                    --i;
+                }
+            }
+
+            thresholdValue /= nbInitialisationPairs;*/
+
+            cout << "No match: Add the new person to the dataset : " << currentSequence.name << endl;
+
             // Add the new person to the database
             listDatabase.push_back(PersonElement());
-            listDatabase.back().features.swap(listSequence);
-            listDatabase.back().sampleImages = currentSequence;
-
-            // Compute the threshold value
+            listDatabase.back().features.swap(listSequenceFeatures);
+            listDatabase.back().sampleImages = currentSequence.listFrameIds;
+            listDatabase.back().thresholdValue = thresholdValue;
+            listDatabase.back().name = currentSequence.name;
         }
         else
         {
-            // Update the match
+            // TODO: Update the match
         }
         // TODO: Manualy label the person if wrong
     }
@@ -169,4 +260,43 @@ void AdaptativeDatabase::loadMachineLearning()
     svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
 
     cout << "Training complete." << endl;
+}
+
+
+float AdaptativeDatabase::distance(const FeaturesElement &elem1, const FeaturesElement &elem2)
+{
+
+    Mat rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
+
+    rowFeatureVector.at<float>(0,0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0,1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0,2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
+
+    return svm.predict(rowFeatureVector);
+}
+
+void AdaptativeDatabase::debugShowImgs(const vector<string> &idsImgs, int nbPos)
+{
+    int number1 = std::rand() % idsImgs.size();
+    int number2 = std::rand() % idsImgs.size();
+    int number3 = std::rand() % idsImgs.size();
+
+    Mat img1 = imread(folderUrl + idsImgs.at(number1) + ".png");
+    Mat img2 = imread(folderUrl + idsImgs.at(number2) + ".png");
+    Mat img3 = imread(folderUrl + idsImgs.at(number3) + ".png");
+
+    if (img1.empty() || img2.empty() || img3.empty())
+    {
+        cout << "Error loading images" << endl;
+        return;
+    }
+
+    //show the image
+    imshow(std::to_string(nbPos) + " - Img1", img1);
+    imshow(std::to_string(nbPos) + " - Img2", img2);
+    imshow(std::to_string(nbPos) + " - Img3", img3);
+
+    moveWindow(std::to_string(nbPos) + " - Img1", 0*200 , nbPos * 200);
+    moveWindow(std::to_string(nbPos) + " - Img2", 1*200 , nbPos * 200);
+    moveWindow(std::to_string(nbPos) + " - Img3", 2*200 , nbPos * 200);
 }

@@ -6,18 +6,11 @@
 #include <algorithm>
 #include <cstdlib>
 
+#include "utils.h"
+
 #define NB_SELECTED_PAIR 10
 
 #define HIST_SIZE 100
-
-bool replace(std::string& str, const std::string& from, const std::string& to)
-{
-    size_t start_pos = str.find(from);
-    if(start_pos == std::string::npos)
-        return false;
-    str.replace(start_pos, from.length(), to);
-    return true;
-}
 
 
 Dataset::Dataset(string folderUrl_) :
@@ -41,8 +34,8 @@ Dataset::Dataset(string folderUrl_) :
         // If new group of image
         if(line.find("-----") != std::string::npos)
         {
-            replace(line, "----- ", "");
-            replace(line, " -----", "");
+            utils::replace(line, "----- ", "");
+            utils::replace(line, " -----", "");
 
             // Check if already on the list
             bool onTheList = false;
