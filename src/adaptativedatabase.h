@@ -41,6 +41,9 @@ struct EvaluationElement
     int nbErrorFalsePositiv;
     int nbErrorFalseNegativ;// Errors details
 
+    int nbErrorWithoutClone;// Errors exept if match at least recognize by one of it's clone in the dataset
+    int nbErrorPersonAdded;// When some is added but is already in the datset
+
     int nbPersonAdded;// Infos
 };
 

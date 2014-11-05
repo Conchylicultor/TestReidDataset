@@ -70,7 +70,7 @@ void AdaptativeDatabase::main()
     // Process:
     std::random_shuffle(listSequence.begin(), listSequence.end());
 
-    listEvaluation.push_back(EvaluationElement{0,0,0,0,0,0});
+    listEvaluation.push_back(EvaluationElement{0,0,0,0,0,0,0});
 
     for(SequenceElement currentSequence : listSequence)
     {
@@ -154,6 +154,7 @@ void AdaptativeDatabase::main()
                 {
                     cout << " <<< ERROR";
 
+                    listEvaluation.back().nbErrorFalsePositiv++;
                     listEvaluation.back().nbError++;
                 }
                 cout << endl;
@@ -166,6 +167,7 @@ void AdaptativeDatabase::main()
                 {
                     cout << " <<< ERROR";
 
+                    listEvaluation.back().nbErrorFalseNegativ++;
                     listEvaluation.back().nbError++;
                 }
                 cout << endl;
@@ -303,7 +305,7 @@ void AdaptativeDatabase::plotEvaluation()
 {
     const int stepHorizontalAxis = 20;
     const int stepVerticalAxis = 20;
-    const int windowsEvalHeight = 400;
+    const int windowsEvalHeight = 500;
 
     Mat imgEval(Size(stepHorizontalAxis * listEvaluation.size(), windowsEvalHeight),
                 CV_8UC3,
@@ -333,6 +335,16 @@ void AdaptativeDatabase::plotEvaluation()
         pt2.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
         putText(imgEval, "Errors", Point(10, 10), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 255, 0));
         line(imgEval, pt1, pt2, Scalar(255, 255, 0));
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbErrorFalseNegativ;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbErrorFalseNegativ;
+        putText(imgEval, "False negativ", Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255));
+        line(imgEval, pt1, pt2, Scalar(0, 255, 255));
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbErrorFalsePositiv;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbErrorFalsePositiv;
+        putText(imgEval, "False positiv", Point(10, 50), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 130, 255));
+        line(imgEval, pt1, pt2, Scalar(0, 130, 255));
     }
 
     // Display
