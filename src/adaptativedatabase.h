@@ -29,12 +29,28 @@ struct SequenceElement
     string name;
 };
 
+struct EvaluationElement
+{
+    // X Datas
+    int nbSequence;
+
+    // Y Datas
+    int nbError;
+    int nbSuccess; // Final result
+
+    int nbErrorFalsePositiv;
+    int nbErrorFalseNegativ;// Errors details
+
+    int nbPersonAdded;// Infos
+};
+
 class AdaptativeDatabase
 {
 public:
     AdaptativeDatabase(string folderUrl_);
 
     void main();
+    void plotEvaluation();
 
 private:
     string folderUrl;
@@ -51,8 +67,9 @@ private:
 
     float distance(const FeaturesElement &elem1, const FeaturesElement &elem2);
 
+    // Debug and evaluations
     void debugShowImgs(const vector<string> &idsImgs, int nbPos);
-
+    vector<EvaluationElement> listEvaluation;// Evaluation which contain the datas to plot
 };
 
 #endif // ADAPTATIVEDATABASE_H

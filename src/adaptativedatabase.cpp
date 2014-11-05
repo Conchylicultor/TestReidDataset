@@ -70,6 +70,8 @@ void AdaptativeDatabase::main()
     // Process:
     std::random_shuffle(listSequence.begin(), listSequence.end());
 
+    listEvaluation.push_back(EvaluationElement{0,0,0,0,0,0});
+
     for(SequenceElement currentSequence : listSequence)
     {
         cout << "--------------------------------------" << endl;
@@ -78,6 +80,18 @@ void AdaptativeDatabase::main()
             cout << "Pb: Not enougth pairs for the current sequence. Cannot add it " << currentSequence.listFrameIds.at(0) << endl;
             continue;
         }
+
+        // Evaluation which contain the datas to plot
+        EvaluationElement newEvalElement;
+        // X
+        newEvalElement.nbSequence = listEvaluation.size() + 1;
+        // Y: Cumulative results
+        newEvalElement.nbError = listEvaluation.back().nbError;
+        newEvalElement.nbSuccess = listEvaluation.back().nbSuccess;
+        newEvalElement.nbErrorFalsePositiv = listEvaluation.back().nbErrorFalsePositiv;
+        newEvalElement.nbErrorFalseNegativ = listEvaluation.back().nbErrorFalseNegativ;
+        newEvalElement.nbPersonAdded = listEvaluation.back().nbPersonAdded;
+        listEvaluation.push_back(newEvalElement);
 
         // Read/load the new sequence
 
@@ -139,6 +153,8 @@ void AdaptativeDatabase::main()
                 if (currentPerson.name != currentSequence.name)
                 {
                     cout << " <<< ERROR";
+
+                    listEvaluation.back().nbError++;
                 }
                 cout << endl;
             }
@@ -149,41 +165,21 @@ void AdaptativeDatabase::main()
                 if (currentPerson.name == currentSequence.name)
                 {
                     cout << " <<< ERROR";
+
+                    listEvaluation.back().nbError++;
                 }
                 cout << endl;
             }
 
-            debugShowImgs(currentSequence.listFrameIds, 0);
+            /*debugShowImgs(currentSequence.listFrameIds, 0);
             debugShowImgs(currentPerson.sampleImages, 1);
-            cv::waitKey(0);
+            cv::waitKey(0);*/
         }
 
         if(newPers)
         {
             // Compute the threshold value
-            // We select random pairs, we compute the distance and deduce the medium class
             float thresholdValue = 0.0;
-
-            // Threshold value not reliable
-            /*for(int i = 0 ; i < nbInitialisationPairs ; ++i)
-            {
-                int number1 = std::rand() % listSequenceFeatures.size();
-                int number2 = std::rand() % listSequenceFeatures.size();
-
-                // TODO: Check that the couple has not been selected yet
-                if(number1 != number2)
-                {
-                    //listSequenceFeatures.at(number1);
-                    // !!!!!!!!!!!!!!
-                    thresholdValue += distance(listSequenceFeatures.at(number1), listSequenceFeatures.at(number2));
-                }
-                else
-                {
-                    --i;
-                }
-            }
-
-            thresholdValue /= nbInitialisationPairs;*/
 
             cout << "No match: Add the new person to the dataset : " << currentSequence.name << endl;
 
@@ -193,6 +189,8 @@ void AdaptativeDatabase::main()
             listDatabase.back().sampleImages = currentSequence.listFrameIds;
             listDatabase.back().thresholdValue = thresholdValue;
             listDatabase.back().name = currentSequence.name;
+
+            listEvaluation.back().nbPersonAdded++;
         }
         else
         {
@@ -299,4 +297,47 @@ void AdaptativeDatabase::debugShowImgs(const vector<string> &idsImgs, int nbPos)
     moveWindow(std::to_string(nbPos) + " - Img1", 0*200 , nbPos * 200);
     moveWindow(std::to_string(nbPos) + " - Img2", 1*200 , nbPos * 200);
     moveWindow(std::to_string(nbPos) + " - Img3", 2*200 , nbPos * 200);
+}
+
+void AdaptativeDatabase::plotEvaluation()
+{
+    const int stepHorizontalAxis = 20;
+    const int stepVerticalAxis = 20;
+    const int windowsEvalHeight = 400;
+
+    Mat imgEval(Size(stepHorizontalAxis * listEvaluation.size(), windowsEvalHeight),
+                CV_8UC3,
+                Scalar(0,0,0));
+
+    for(size_t i = 1 ; i < listEvaluation.size() ; ++i)
+    {
+        EvaluationElement evalElemPrev = listEvaluation.at(i-1);
+        EvaluationElement evalElemNext = listEvaluation.at(i);
+
+        Point pt1;
+        Point pt2;
+        pt1.x = stepHorizontalAxis * evalElemPrev.nbSequence;
+        pt2.x = stepHorizontalAxis * evalElemNext.nbSequence;
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbPersonAdded;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbPersonAdded;
+        putText(imgEval, "Person added", Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 0, 0));
+        line(imgEval, pt1, pt2, Scalar(255, 0, 0));
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbError;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbError;
+        putText(imgEval, "Errors (Cumulativ)", Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
+        line(imgEval, pt1, pt2, Scalar(0, 255, 0));
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
+        pt2.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
+        putText(imgEval, "Errors", Point(10, 10), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 255, 0));
+        line(imgEval, pt1, pt2, Scalar(255, 255, 0));
+    }
+
+    // Display
+    namedWindow("Evaluation Results", CV_WINDOW_AUTOSIZE);
+    imshow("Evaluation Results", imgEval);
+
+    waitKey();
 }

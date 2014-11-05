@@ -41,6 +41,7 @@ int main()
     cout << "Launch..." << endl;
     AdaptativeDatabase adaptativeDb("/home/etienne/__A__/Data/Dataset/Set_1/");
     adaptativeDb.main();
+    adaptativeDb.plotEvaluation();
     cout << "... End of processing" << endl;
 
     return 0;
