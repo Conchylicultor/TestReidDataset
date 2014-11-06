@@ -70,7 +70,7 @@ void AdaptativeDatabase::main()
     // Process:
     std::random_shuffle(listSequence.begin(), listSequence.end());
 
-    listEvaluation.push_back(EvaluationElement{0,0,0,0,0,0,0});
+    listEvaluation.push_back(EvaluationElement{0,0,0,0,0,0,0,0,0});
 
     for(SequenceElement currentSequence : listSequence)
     {
@@ -86,11 +86,14 @@ void AdaptativeDatabase::main()
         // X
         newEvalElement.nbSequence = listEvaluation.size() + 1;
         // Y: Cumulative results
-        newEvalElement.nbError = listEvaluation.back().nbError;
-        newEvalElement.nbSuccess = listEvaluation.back().nbSuccess;
+        newEvalElement.nbError             = listEvaluation.back().nbError;
+        newEvalElement.nbSuccess           = listEvaluation.back().nbSuccess;
         newEvalElement.nbErrorFalsePositiv = listEvaluation.back().nbErrorFalsePositiv;
         newEvalElement.nbErrorFalseNegativ = listEvaluation.back().nbErrorFalseNegativ;
-        newEvalElement.nbPersonAdded = listEvaluation.back().nbPersonAdded;
+        newEvalElement.nbErrorPersonAdded  = listEvaluation.back().nbErrorPersonAdded;
+        newEvalElement.nbErrorWithoutClone = listEvaluation.back().nbErrorWithoutClone;
+        newEvalElement.nbClone             = listEvaluation.back().nbClone;
+        newEvalElement.nbPersonAdded       = listEvaluation.back().nbPersonAdded;
         listEvaluation.push_back(newEvalElement);
 
         // Read/load the new sequence
@@ -120,12 +123,23 @@ void AdaptativeDatabase::main()
         }
 
         bool newPers(true);
+        bool alreadyInDataset(false);
+        bool isRecognizeOnce(false);
+        int nbErrorClone(0);
+        for(PersonElement currentPerson : listDatabase)
+        {
+            if(currentPerson.name == currentSequence.name)
+            {
+                alreadyInDataset = true;
+            }
+        }
 
         // Select persons on the database and compute distance
         for(PersonElement currentPerson : listDatabase)
         {
             float thresholdValue = 0.0;
 
+            // Randomly compare persons in the dataset
             for(int i = 0 ; i < nbTestingPairs ; ++i)
             {
                 int number1 = std::rand() % listSequenceFeatures.size();
@@ -150,25 +164,32 @@ void AdaptativeDatabase::main()
                 cout << "Match (" << thresholdValue << ") : " << currentPerson.name;
                 newPers = false;
 
-                if (currentPerson.name != currentSequence.name)
+                if (currentPerson.name != currentSequence.name) // False positiv
                 {
                     cout << " <<< ERROR";
 
-                    listEvaluation.back().nbErrorFalsePositiv++;
                     listEvaluation.back().nbError++;
+                    listEvaluation.back().nbErrorFalsePositiv++;
+                    listEvaluation.back().nbErrorWithoutClone++;
                 }
+                else
+                {
+                    isRecognizeOnce = true;
+                }
+
                 cout << endl;
             }
             else
             {
                 cout << "Diff (" << thresholdValue << ")";
 
-                if (currentPerson.name == currentSequence.name)
+                if (currentPerson.name == currentSequence.name) // False negativ
                 {
                     cout << " <<< ERROR";
 
-                    listEvaluation.back().nbErrorFalseNegativ++;
                     listEvaluation.back().nbError++;
+                    listEvaluation.back().nbErrorFalseNegativ++;
+                    nbErrorClone++;
                 }
                 cout << endl;
             }
@@ -176,6 +197,16 @@ void AdaptativeDatabase::main()
             /*debugShowImgs(currentSequence.listFrameIds, 0);
             debugShowImgs(currentPerson.sampleImages, 1);
             cv::waitKey(0);*/
+        }
+
+        if(alreadyInDataset && !isRecognizeOnce)
+        {
+            listEvaluation.back().nbErrorWithoutClone += nbErrorClone;
+        }
+
+        if(alreadyInDataset && newPers)
+        {
+            listEvaluation.back().nbClone++;
         }
 
         if(newPers)
@@ -321,30 +352,49 @@ void AdaptativeDatabase::plotEvaluation()
         pt1.x = stepHorizontalAxis * evalElemPrev.nbSequence;
         pt2.x = stepHorizontalAxis * evalElemNext.nbSequence;
 
+        Scalar color;
+
         pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbPersonAdded;
         pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbPersonAdded;
-        putText(imgEval, "Person added", Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 0, 0));
-        line(imgEval, pt1, pt2, Scalar(255, 0, 0));
+        color = Scalar(255, 0, 0);
+        putText(imgEval, "Person added", Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
 
         pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbError;
         pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbError;
-        putText(imgEval, "Errors (Cumulativ)", Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 0));
-        line(imgEval, pt1, pt2, Scalar(0, 255, 0));
-
-        pt1.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
-        pt2.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
-        putText(imgEval, "Errors", Point(10, 10), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 255, 0));
-        line(imgEval, pt1, pt2, Scalar(255, 255, 0));
+        color = Scalar(0, 255, 0);
+        putText(imgEval, "Errors (Cumulativ)", Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
 
         pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbErrorFalseNegativ;
         pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbErrorFalseNegativ;
-        putText(imgEval, "False negativ", Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255));
-        line(imgEval, pt1, pt2, Scalar(0, 255, 255));
+        color = Scalar(0, 255, 255);
+        putText(imgEval, "False negativ", Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
 
         pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbErrorFalsePositiv;
         pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbErrorFalsePositiv;
-        putText(imgEval, "False positiv", Point(10, 50), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 130, 255));
-        line(imgEval, pt1, pt2, Scalar(0, 130, 255));
+        color = Scalar(0, 130, 255);
+        putText(imgEval, "False positiv", Point(10, 50), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbErrorWithoutClone;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbErrorWithoutClone;
+        color = Scalar(115, 32, 150);
+        putText(imgEval, "Without clone", Point(10, 60), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * evalElemPrev.nbClone;
+        pt2.y = windowsEvalHeight - stepVerticalAxis * evalElemNext.nbClone;
+        color = Scalar(73, 92, 17);
+        putText(imgEval, "Clones", Point(10, 70), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
+
+        pt1.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
+        pt2.y = windowsEvalHeight - stepVerticalAxis * (evalElemNext.nbError - evalElemPrev.nbError);
+        color = Scalar(255, 255, 0);
+        putText(imgEval, "Errors", Point(10, 10), FONT_HERSHEY_SIMPLEX, 0.4, color);
+        line(imgEval, pt1, pt2, color);
     }
 
     // Display

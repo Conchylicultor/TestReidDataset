@@ -38,11 +38,12 @@ struct EvaluationElement
     int nbError;
     int nbSuccess; // Final result
 
-    int nbErrorFalsePositiv;
-    int nbErrorFalseNegativ;// Errors details
+    int nbErrorFalsePositiv;// << Database corrupted
+    int nbErrorFalseNegativ;
 
-    int nbErrorWithoutClone;// Errors exept if match at least recognize by one of it's clone in the dataset
+    int nbErrorWithoutClone;// Errors exept if match at least recognize (at least) by one of it's clone in the dataset
     int nbErrorPersonAdded;// When some is added but is already in the datset
+    int nbClone;// When some is added but is already in the datset
 
     int nbPersonAdded;// Infos
 };
