@@ -158,6 +158,8 @@ void AdaptativeDatabase::main()
 
             thresholdValue /= nbTestingPairs;
 
+            bool isErrorDebug = false;
+
             // Depending of the thresholdValue, reid or not
             if(thresholdValue > 0.5)
             {
@@ -171,6 +173,8 @@ void AdaptativeDatabase::main()
                     listEvaluation.back().nbError++;
                     listEvaluation.back().nbErrorFalsePositiv++;
                     listEvaluation.back().nbErrorWithoutClone++;
+
+                    isErrorDebug = true;
                 }
                 else
                 {
@@ -190,13 +194,18 @@ void AdaptativeDatabase::main()
                     listEvaluation.back().nbError++;
                     listEvaluation.back().nbErrorFalseNegativ++;
                     nbErrorClone++;
+
+                    isErrorDebug = true;
                 }
                 cout << endl;
             }
 
-            /*debugShowImgs(currentSequence.listFrameIds, 0);
-            debugShowImgs(currentPerson.sampleImages, 1);
-            cv::waitKey(0);*/
+            /*if(isErrorDebug)
+            {
+                debugShowImgs(currentSequence.listFrameIds, 0);
+                debugShowImgs(currentPerson.sampleImages, 1);
+                cv::waitKey(0);
+            }*/
         }
 
         if(alreadyInDataset && !isRecognizeOnce)
@@ -336,7 +345,7 @@ void AdaptativeDatabase::plotEvaluation()
 {
     const int stepHorizontalAxis = 20;
     const int stepVerticalAxis = 20;
-    const int windowsEvalHeight = 500;
+    const int windowsEvalHeight = 900;
 
     Mat imgEval(Size(stepHorizontalAxis * listEvaluation.size(), windowsEvalHeight),
                 CV_8UC3,

@@ -12,7 +12,7 @@ int main()
     /*cout << "_________________________________" << endl;
     cout << "Loading dataset..." << endl;
 
-    Dataset dataset("/home/etienne/__A__/Data/Dataset/Set_1/");
+    Dataset dataset("/home/etienne/__A__/Data/Dataset/Set_2/");
 
     cout << "_________________________________" << endl;
     cout << "Sample selection..." << endl;
@@ -39,7 +39,7 @@ int main()
     dataset.test();*/
 
     cout << "Launch..." << endl;
-    AdaptativeDatabase adaptativeDb("/home/etienne/__A__/Data/Dataset/Set_1/");
+    AdaptativeDatabase adaptativeDb("/home/etienne/__A__/Data/Dataset/Set_2/");
     adaptativeDb.main();
     adaptativeDb.plotEvaluation();
     cout << "... End of processing" << endl;
