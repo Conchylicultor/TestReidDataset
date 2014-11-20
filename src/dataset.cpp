@@ -78,6 +78,12 @@ void Dataset::selectPairs()
         // ... select some random pairs
         for(int i = 0 ; i < NB_SELECTED_PAIR ; ++i) // TODO ?: Replace the arbitrary choosen number ?
         {
+            if(iter.getListImagesId().size() == 1)
+            {
+                cout << "Error: Sequence of one image" << endl;
+                break;
+            }
+
             int number1 = std::rand() % iter.getListImagesId().size();
             int number2 = std::rand() % iter.getListImagesId().size();
 
