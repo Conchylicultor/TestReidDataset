@@ -43,6 +43,8 @@ private:
 
     void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
 
+    void majorColors(const Mat &frame, array<Scalar, 2> &listMajorColors);
+
     cv::Mat trainingData;
     cv::Mat trainingClasses;
 

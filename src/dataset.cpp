@@ -12,6 +12,8 @@
 
 #define HIST_SIZE 100
 
+#define RECORD_SVM_TRAINING 0
+
 
 Dataset::Dataset(string folderUrl_) :
     folderUrl(folderUrl_)
@@ -229,13 +231,16 @@ void Dataset::trainSVM()
 
     svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
 
-    /*FileStorage fileTraining(folderUrl + "training.yml", FileStorage::WRITE);
+    if(RECORD_SVM_TRAINING)
+    {
+        FileStorage fileTraining(folderUrl + "training.yml", FileStorage::WRITE);
 
-    fileTraining << "trainingData" << trainingData;
-    fileTraining << "trainingClasses" << trainingClasses;
+        fileTraining << "trainingData" << trainingData;
+        fileTraining << "trainingClasses" << trainingClasses;
 
-    fileTraining.release();*/
+        fileTraining.release();
 
+    }
 }
 
 void Dataset::test()
@@ -304,4 +309,9 @@ void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histog
     normalize(histogramChannels[0], histogramChannels[0]);
     normalize(histogramChannels[1], histogramChannels[1]);
     normalize(histogramChannels[2], histogramChannels[2]);
+}
+
+void Dataset::majorColors(const Mat &frame, array<Scalar, 2> &listMajorColors)
+{
+
 }
