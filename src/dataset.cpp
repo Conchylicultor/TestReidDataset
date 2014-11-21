@@ -181,6 +181,11 @@ void Dataset::computeFeatures()
         rowFeatureVector.at<float>(0,1) = compareHist(histogramChannelsPers1.at(1), histogramChannelsPers2.at(1), CV_COMP_BHATTACHARYYA);
         rowFeatureVector.at<float>(0,2) = compareHist(histogramChannelsPers1.at(2), histogramChannelsPers2.at(2), CV_COMP_BHATTACHARYYA);
 
+        array<Scalar, 2> majorColorsPers1;
+        array<Scalar, 2> majorColorsPers2;
+
+        majorColors(imgPers1, imgMaskPers1, majorColorsPers1);
+        majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
 
         Mat rowClass = cv::Mat::ones(1, 1, CV_32FC1);
         if(iter.samePerson)
@@ -311,7 +316,28 @@ void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histog
     normalize(histogramChannels[2], histogramChannels[2]);
 }
 
-void Dataset::majorColors(const Mat &frame, array<Scalar, 2> &listMajorColors)
+void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> &listMajorColors)
 {
+    cout << "begin" << endl;
 
+    Mat src = frame.clone();
+
+    Mat samples(cv::countNonZero(fgMask), 3, CV_32F); // We only cluster the "white" pixels
+
+    int i = 0;
+    for (int x ; x < src.rows ; ++x)
+    {
+        for (int y = 0; y < src.cols ; ++y)
+        {
+            if(fgMask.at<uchar>(x,y))
+            {
+                samples.at<float>(i,0) = src.at<Vec3b>(x,y)[0];
+                samples.at<float>(i,1) = src.at<Vec3b>(x,y)[1];
+                samples.at<float>(i,2) = src.at<Vec3b>(x,y)[2];
+                ++i;
+            }
+        }
+    }
+
+    cout << "end" << endl;
 }
