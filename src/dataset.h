@@ -9,6 +9,14 @@
 using namespace std;
 using namespace cv;
 
+
+#define NB_MAJOR_COLORS 3
+
+struct MajorColorElem
+{
+    Scalar color;
+};
+
 struct PairSample
 {
     string first;
@@ -43,7 +51,7 @@ private:
 
     void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
 
-    void majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> &listMajorColors);
+    void majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors);
 
     cv::Mat trainingData;
     cv::Mat trainingClasses;

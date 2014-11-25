@@ -181,8 +181,8 @@ void Dataset::computeFeatures()
         rowFeatureVector.at<float>(0,1) = compareHist(histogramChannelsPers1.at(1), histogramChannelsPers2.at(1), CV_COMP_BHATTACHARYYA);
         rowFeatureVector.at<float>(0,2) = compareHist(histogramChannelsPers1.at(2), histogramChannelsPers2.at(2), CV_COMP_BHATTACHARYYA);
 
-        array<Scalar, 2> majorColorsPers1;
-        array<Scalar, 2> majorColorsPers2;
+        array<MajorColorElem, NB_MAJOR_COLORS> majorColorsPers1;
+        array<MajorColorElem, NB_MAJOR_COLORS> majorColorsPers2;
 
         majorColors(imgPers1, imgMaskPers1, majorColorsPers1);
         majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
@@ -316,7 +316,7 @@ void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histog
     normalize(histogramChannels[2], histogramChannels[2]);
 }
 
-void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> &listMajorColors)
+void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors)
 {
     Mat src = frame.clone();
 
@@ -339,7 +339,7 @@ void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> 
     }
 
     // Step 2 : apply kmeans to find labels and centers
-    int clusterCount = 3;
+    int clusterCount = NB_MAJOR_COLORS;
     cv::Mat labels;
     int attempts = 5;
     cv::Mat centers;
@@ -370,6 +370,12 @@ void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> 
                 dest.at<Vec3b>(x,y)[2] = 0;
             }
         }
+    }
+
+    // Step 4 : Fill information
+    for(int i = 0 ; i < centers.rows ; ++i)
+    {
+
     }
 
     /*// Debug
