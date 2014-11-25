@@ -187,6 +187,15 @@ void Dataset::computeFeatures()
         majorColors(imgPers1, imgMaskPers1, majorColorsPers1);
         majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
 
+        // Distance for the major color
+        for(MajorColorElem currentElem1 : majorColorsPers1)
+        {
+            for(MajorColorElem currentElem2 : majorColorsPers2)
+            {
+                // dist = norm(currentElem1.color - currentElem2.color);
+            }
+        }
+
         // TODO: Add feature: camera id ; Add feature: time
 
         Mat rowClass = cv::Mat::ones(1, 1, CV_32FC1);
