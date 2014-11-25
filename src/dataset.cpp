@@ -187,6 +187,8 @@ void Dataset::computeFeatures()
         majorColors(imgPers1, imgMaskPers1, majorColorsPers1);
         majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
 
+        // TODO: Add feature: camera id ; Add feature: time
+
         Mat rowClass = cv::Mat::ones(1, 1, CV_32FC1);
         if(iter.samePerson)
         {
@@ -375,7 +377,13 @@ void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorE
     // Step 4 : Fill information
     for(int i = 0 ; i < centers.rows ; ++i)
     {
+        listMajorColors.at(i).color = Scalar(centers.at<float>(i, 0),
+                                             centers.at<float>(i, 1),
+                                             centers.at<float>(i, 2));
 
+        // TODO: Add Spacial information
+
+        // TODO: Add number of pixel of each major color
     }
 
     /*// Debug
