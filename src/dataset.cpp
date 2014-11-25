@@ -318,16 +318,15 @@ void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histog
 
 void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> &listMajorColors)
 {
-    cout << "begin" << endl;
-
     Mat src = frame.clone();
 
+    // Step 1 : map the src to the samples
     Mat samples(cv::countNonZero(fgMask), 3, CV_32F); // We only cluster the "white" pixels
 
     int i = 0;
-    for (int x ; x < src.rows ; ++x)
+    for (int x = 0 ; x < fgMask.rows ; ++x)
     {
-        for (int y = 0; y < src.cols ; ++y)
+        for (int y = 0; y < fgMask.cols ; ++y)
         {
             if(fgMask.at<uchar>(x,y))
             {
@@ -339,5 +338,44 @@ void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<Scalar, 2> 
         }
     }
 
-    cout << "end" << endl;
+    // Step 2 : apply kmeans to find labels and centers
+    int clusterCount = 3;
+    cv::Mat labels;
+    int attempts = 5;
+    cv::Mat centers;
+    cv::kmeans(samples, clusterCount, labels,
+               cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
+                                10, 0.01),
+               attempts, cv::KMEANS_PP_CENTERS, centers);
+
+    // Step 3 : map the centers to the output
+    i = 0;
+    Mat dest(src.size(), src.type());
+    for (int x = 0 ; x < dest.rows ; ++x)
+    {
+        for (int y = 0 ; y < dest.cols ; ++y)
+        {
+            if(fgMask.at<uchar>(x,y))
+            {
+                int cluster_idx = labels.at<int>(i,0);
+                dest.at<Vec3b>(x,y)[0] = centers.at<float>(cluster_idx, 0);
+                dest.at<Vec3b>(x,y)[1] = centers.at<float>(cluster_idx, 1);
+                dest.at<Vec3b>(x,y)[2] = centers.at<float>(cluster_idx, 2);
+                ++i;
+            }
+            else
+            {
+                dest.at<Vec3b>(x,y)[0] = 0;
+                dest.at<Vec3b>(x,y)[1] = 0;
+                dest.at<Vec3b>(x,y)[2] = 0;
+            }
+        }
+    }
+
+    /*// Debug
+
+    imshow("src", src);
+    imshow("mask", fgMask);
+    imshow("dest", dest);
+    waitKey( 0 );*/
 }
