@@ -15,6 +15,8 @@ using namespace cv;
 struct MajorColorElem
 {
     Scalar color;
+    float position;
+    int weightColor; // Nb of element of this color
 };
 
 struct PairSample

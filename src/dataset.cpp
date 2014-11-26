@@ -188,6 +188,7 @@ void Dataset::computeFeatures()
         majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
 
         // Distance for the major color
+        float minDist;
         for(MajorColorElem currentElem1 : majorColorsPers1)
         {
             for(MajorColorElem currentElem2 : majorColorsPers2)

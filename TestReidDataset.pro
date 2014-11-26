@@ -11,10 +11,12 @@ SOURCES += src/main.cpp \
     src/dataset.cpp \
     src/person.cpp \
     src/adaptativedatabase.cpp \
-    src/utils.cpp
+    src/utils.cpp \
+    src/features.cpp
 
 HEADERS += \
     src/dataset.h \
     src/person.h \
     src/adaptativedatabase.h \
-    src/utils.h
+    src/utils.h \
+    src/features.h
