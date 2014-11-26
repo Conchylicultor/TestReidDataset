@@ -6,12 +6,46 @@
 
 void Features::computeFeature(const string &id, FeaturesElement &featuresElemOut)
 {
+    // Read images
+    Mat imgPers     = imread(id + ".png");
+    Mat imgMaskPers = imread(id + "_mask.png");
 
+
+    if (imgPers.empty() || imgMaskPers.empty())
+    {
+        cout << "Error: cannot loading images : " << endl;
+        cout << id << endl;
+
+        exit(0);
+    }
+
+    cvtColor(imgMaskPers, imgMaskPers, CV_BGR2GRAY);
+    threshold(imgMaskPers, imgMaskPers, 254, 255, THRESH_BINARY);
+
+    histRGB(imgPers, imgMaskPers, featuresElemOut.histogramChannels);
+    majorColors(imgPers, imgMaskPers, featuresElemOut.majorColors);
 }
 
-void Features::computeDistance(const FeaturesElement &featuresElemIn1, const FeaturesElement &featuresElemIn2, Mat rowFeatureVector)
+void Features::computeDistance(const FeaturesElement &elem1, const FeaturesElement &elem2, Mat &rowFeatureVector)
 {
+    rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
 
+    // Histogram
+    rowFeatureVector.at<float>(0,0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0,1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0,2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
+
+    // Major colors
+    float minDist;
+    for(MajorColorElem currentElem1 : elem1.majorColors)
+    {
+        for(MajorColorElem currentElem2 : elem2.majorColors)
+        {
+            // dist = norm(currentElem1.color - currentElem2.color);
+        }
+    }
+
+    // TODO: Add feature: camera id ; Add feature: time
 }
 
 void Features::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)

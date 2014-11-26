@@ -31,7 +31,7 @@ class Features
 {
 public:
     static void computeFeature(const string &id, FeaturesElement &featuresElemOut);
-    static void computeDistance(const FeaturesElement &featuresElemIn1, const FeaturesElement &featuresElemIn2, Mat rowFeatureVector);
+    static void computeDistance(const FeaturesElement &elem1, const FeaturesElement &elem2, Mat &rowFeatureVector);
 private:
     static void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
     static void majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors);
