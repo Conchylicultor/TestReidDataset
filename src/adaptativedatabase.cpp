@@ -104,11 +104,8 @@ void AdaptativeDatabase::main()
 
         for(string currentIdString : currentSequence.listFrameIds)
         {
-            FeaturesElement newFeaturesElem;
-
-            Features::computeFeature(folderUrl + currentIdString, newFeaturesElem);
-
-            listSequenceFeatures.push_back(newFeaturesElem);
+            listSequenceFeatures.push_back(FeaturesElement());
+            Features::computeFeature(folderUrl + currentIdString, listSequenceFeatures.back());
         }
 
         bool newPers(true);

@@ -151,7 +151,7 @@ void Dataset::computeFeatures()
 
         // Compute features for each person
         Features::computeFeature(folderUrl + iter.first, featureElem1);
-        Features::computeFeature(folderUrl + iter.first, featureElem2);
+        Features::computeFeature(folderUrl + iter.second, featureElem2);
 
         // Compute distance and add feature vector to the training set
         Mat rowFeatureVector;
