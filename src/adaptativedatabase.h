@@ -5,13 +5,10 @@
 #include <array>
 #include "opencv2/opencv.hpp"
 
+#include "features.h"
+
 using namespace std;
 using namespace cv;
-
-struct FeaturesElement
-{
-    array<Mat, 3> histogramChannels;
-};
 
 struct PersonElement
 {
@@ -64,12 +61,8 @@ private:
     vector<PersonElement> listDatabase;
 
     // Compute features
-    void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
-
     void loadMachineLearning();
     CvSVM svm;
-
-    float distance(const FeaturesElement &elem1, const FeaturesElement &elem2);
 
     // Debug and evaluations
     void debugShowImgs(const vector<string> &idsImgs, int nbPos);
