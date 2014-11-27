@@ -14,7 +14,7 @@ using namespace cv;
 
 struct MajorColorElem
 {
-    Scalar color;
+    Vec3b color;
     float position;
     int weightColor; // Nb of element of this color
 };

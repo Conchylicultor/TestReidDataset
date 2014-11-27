@@ -28,15 +28,18 @@ void Features::computeFeature(const string &id, FeaturesElement &featuresElemOut
 
 void Features::computeDistance(const FeaturesElement &elem1, const FeaturesElement &elem2, Mat &rowFeatureVector)
 {
+    int currentIndexFeature = 0;// Usefull if I change the order or remove a feature (don't need to change all the index)
+
     rowFeatureVector = cv::Mat::ones(1, 3 + NB_MAJOR_COLORS, CV_32FC1);
+    //rowFeatureVector = cv::Mat::ones(1, NB_MAJOR_COLORS, CV_32FC1);
 
     // Histogram
-    rowFeatureVector.at<float>(0,0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
-    rowFeatureVector.at<float>(0,1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
-    rowFeatureVector.at<float>(0,2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0, currentIndexFeature+0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0, currentIndexFeature+1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
+    rowFeatureVector.at<float>(0, currentIndexFeature+2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
+    currentIndexFeature += 3;
 
     // Major colors
-    int indexColumns = 3;
     for(MajorColorElem currentElem1 : elem1.majorColors)
     {
         float minDist = norm(currentElem1.color - elem2.majorColors.front().color);
@@ -49,8 +52,8 @@ void Features::computeDistance(const FeaturesElement &elem1, const FeaturesEleme
                 minDist = dist;
             }
         }
-        rowFeatureVector.at<float>(0,indexColumns) = minDist;
-        indexColumns++;
+        rowFeatureVector.at<float>(0,currentIndexFeature) = minDist;
+        currentIndexFeature++;
     }
 
     // TODO: Add feature: camera id ; Add feature: time
@@ -107,7 +110,29 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
                                 10, 0.01),
                attempts, cv::KMEANS_PP_CENTERS, centers);
 
-    // Step 3 : map the centers to the output
+
+    // Step 3 : Fill information
+    for(i = 0 ; i < centers.rows ; ++i)
+    {
+        listMajorColors.at(i).color = Vec3b(centers.at<float>(i, 0),
+                                            centers.at<float>(i, 1),
+                                            centers.at<float>(i, 2));
+
+        // Conversion to a good color space (for distance computation)
+        Mat imgToConvert(1, 1, CV_8UC3, Scalar(listMajorColors.at(i).color));
+
+        cvtColor(imgToConvert, imgToConvert, CV_BGR2Lab);
+
+        listMajorColors.at(i).color = imgToConvert.at<Vec3b>(0,0);
+
+        // Add number of pixel of each major color
+        listMajorColors.at(i).weightColor = 0;
+
+        // TODO: Add Spacial information
+
+    }
+
+    // Step 4 : map the centers to the output
     i = 0;
     Mat dest(src.size(), src.type());
     for (int x = 0 ; x < dest.rows ; ++x)
@@ -117,6 +142,7 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
             if(fgMask.at<uchar>(x,y))
             {
                 int cluster_idx = labels.at<int>(i,0);
+                listMajorColors.at(cluster_idx).weightColor++ ;
                 dest.at<Vec3b>(x,y)[0] = centers.at<float>(cluster_idx, 0);
                 dest.at<Vec3b>(x,y)[1] = centers.at<float>(cluster_idx, 1);
                 dest.at<Vec3b>(x,y)[2] = centers.at<float>(cluster_idx, 2);
@@ -131,21 +157,15 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
         }
     }
 
-    // Step 4 : Fill information
-    for(int i = 0 ; i < centers.rows ; ++i)
+    // Debug
+
+    /*for(MajorColorElem currentElem : listMajorColors)
     {
-        listMajorColors.at(i).color = Scalar(centers.at<float>(i, 0),
-                                             centers.at<float>(i, 1),
-                                             centers.at<float>(i, 2));
-
-        // TODO: Add Spacial information
-
-        // TODO: Add number of pixel of each major color
-
+        cout << (int)currentElem.color[0] << " "
+             << (int)currentElem.color[1] << " "
+             << (int)currentElem.color[2] << endl;
+        cout << currentElem.weightColor << endl;
     }
-
-    /*// Debug
-
     imshow("src", src);
     imshow("mask", fgMask);
     imshow("dest", dest);
