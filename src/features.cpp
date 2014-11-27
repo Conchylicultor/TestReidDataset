@@ -28,7 +28,7 @@ void Features::computeFeature(const string &id, FeaturesElement &featuresElemOut
 
 void Features::computeDistance(const FeaturesElement &elem1, const FeaturesElement &elem2, Mat &rowFeatureVector)
 {
-    rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
+    rowFeatureVector = cv::Mat::ones(1, 3 + NB_MAJOR_COLORS, CV_32FC1);
 
     // Histogram
     rowFeatureVector.at<float>(0,0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
@@ -36,13 +36,21 @@ void Features::computeDistance(const FeaturesElement &elem1, const FeaturesEleme
     rowFeatureVector.at<float>(0,2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
 
     // Major colors
-    float minDist;
+    int indexColumns = 3;
     for(MajorColorElem currentElem1 : elem1.majorColors)
     {
+        float minDist = norm(currentElem1.color - elem2.majorColors.front().color);
+        float dist = 0.0;
         for(MajorColorElem currentElem2 : elem2.majorColors)
         {
-            // dist = norm(currentElem1.color - currentElem2.color);
+            dist = norm(currentElem1.color - currentElem2.color);
+            if(dist < minDist)
+            {
+                minDist = dist;
+            }
         }
+        rowFeatureVector.at<float>(0,indexColumns) = minDist;
+        indexColumns++;
     }
 
     // TODO: Add feature: camera id ; Add feature: time
@@ -133,6 +141,7 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
         // TODO: Add Spacial information
 
         // TODO: Add number of pixel of each major color
+
     }
 
     /*// Debug
