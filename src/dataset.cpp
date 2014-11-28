@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "utils.h"
+#include "features.h"
 
 #define NB_SELECTED_PAIR 10
 
@@ -145,59 +146,16 @@ void Dataset::computeFeatures()
     {
         PairSample &iter = listSamples.at(i);
 
-        // Read images
-        Mat imgPers1     = imread(folderUrl + iter.first + ".png");
-        Mat imgMaskPers1 = imread(folderUrl + iter.first + "_mask.png");
-
-        Mat imgPers2     = imread(folderUrl + iter.second + ".png");
-        Mat imgMaskPers2 = imread(folderUrl + iter.second + "_mask.png");
-
-
-        if (imgPers1.empty() || imgPers2.empty() || imgMaskPers1.empty() || imgMaskPers2.empty())
-        {
-            cout << "Error: cannot loading images" << endl;
-            cout << "    " << iter.first << endl;
-            cout << "    " << iter.second << endl;
-            continue;
-        }
-
-        cvtColor(imgMaskPers1,imgMaskPers1,CV_BGR2GRAY);
-        threshold(imgMaskPers1, imgMaskPers1, 254, 255, THRESH_BINARY);
-
-        cvtColor(imgMaskPers2,imgMaskPers2,CV_BGR2GRAY);
-        threshold(imgMaskPers2, imgMaskPers2, 254, 255, THRESH_BINARY);
+        FeaturesElement featureElem1;
+        FeaturesElement featureElem2;
 
         // Compute features for each person
-
-        array<Mat, 3> histogramChannelsPers1;
-        array<Mat, 3> histogramChannelsPers2;
-        histRGB(imgPers1, imgMaskPers1, histogramChannelsPers1);
-        histRGB(imgPers2, imgMaskPers2, histogramChannelsPers2);
+        Features::computeFeature(folderUrl + iter.first, featureElem1);
+        Features::computeFeature(folderUrl + iter.second, featureElem2);
 
         // Compute distance and add feature vector to the training set
-        Mat rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
-
-        rowFeatureVector.at<float>(0,0) = compareHist(histogramChannelsPers1.at(0), histogramChannelsPers2.at(0), CV_COMP_BHATTACHARYYA);
-        rowFeatureVector.at<float>(0,1) = compareHist(histogramChannelsPers1.at(1), histogramChannelsPers2.at(1), CV_COMP_BHATTACHARYYA);
-        rowFeatureVector.at<float>(0,2) = compareHist(histogramChannelsPers1.at(2), histogramChannelsPers2.at(2), CV_COMP_BHATTACHARYYA);
-
-        array<MajorColorElem, NB_MAJOR_COLORS> majorColorsPers1;
-        array<MajorColorElem, NB_MAJOR_COLORS> majorColorsPers2;
-
-        majorColors(imgPers1, imgMaskPers1, majorColorsPers1);
-        majorColors(imgPers2, imgMaskPers2, majorColorsPers2);
-
-        // Distance for the major color
-        float minDist;
-        for(MajorColorElem currentElem1 : majorColorsPers1)
-        {
-            for(MajorColorElem currentElem2 : majorColorsPers2)
-            {
-                // dist = norm(currentElem1.color - currentElem2.color);
-            }
-        }
-
-        // TODO: Add feature: camera id ; Add feature: time
+        Mat rowFeatureVector;
+        Features::computeDistance(featureElem1, featureElem2, rowFeatureVector);
 
         Mat rowClass = cv::Mat::ones(1, 1, CV_32FC1);
         if(iter.samePerson)
@@ -306,100 +264,4 @@ void Dataset::test()
     }
     cout << "Results: " << nbTrue/(nbTrue+nbFalse)*100.0 << "%" << endl;
     cout << "F:" << nbFalse << " T:" << nbTrue << endl;
-}
-
-
-void Dataset::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)
-{
-    // Conversion to the right color space ???
-    // Size of the histogram
-    int histSize = HIST_SIZE; // bin size
-    float range[] = {0, 256}; // min max values
-    const float *ranges[] = {range};
-    // Extraction of the histograms
-    std::vector<cv::Mat> sourceChannels;
-    cv::split(frame, sourceChannels);
-    cv::calcHist(&sourceChannels[0], 1, 0, fgMask, histogramChannels[0], 1, &histSize, ranges, true, false );
-    cv::calcHist(&sourceChannels[1], 1, 0, fgMask, histogramChannels[1], 1, &histSize, ranges, true, false );
-    cv::calcHist(&sourceChannels[2], 1, 0, fgMask, histogramChannels[2], 1, &histSize, ranges, true, false );
-    // Normalize
-    normalize(histogramChannels[0], histogramChannels[0]);
-    normalize(histogramChannels[1], histogramChannels[1]);
-    normalize(histogramChannels[2], histogramChannels[2]);
-}
-
-void Dataset::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors)
-{
-    Mat src = frame.clone();
-
-    // Step 1 : map the src to the samples
-    Mat samples(cv::countNonZero(fgMask), 3, CV_32F); // We only cluster the "white" pixels
-
-    int i = 0;
-    for (int x = 0 ; x < fgMask.rows ; ++x)
-    {
-        for (int y = 0; y < fgMask.cols ; ++y)
-        {
-            if(fgMask.at<uchar>(x,y))
-            {
-                samples.at<float>(i,0) = src.at<Vec3b>(x,y)[0];
-                samples.at<float>(i,1) = src.at<Vec3b>(x,y)[1];
-                samples.at<float>(i,2) = src.at<Vec3b>(x,y)[2];
-                ++i;
-            }
-        }
-    }
-
-    // Step 2 : apply kmeans to find labels and centers
-    int clusterCount = NB_MAJOR_COLORS;
-    cv::Mat labels;
-    int attempts = 5;
-    cv::Mat centers;
-    cv::kmeans(samples, clusterCount, labels,
-               cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS,
-                                10, 0.01),
-               attempts, cv::KMEANS_PP_CENTERS, centers);
-
-    // Step 3 : map the centers to the output
-    i = 0;
-    Mat dest(src.size(), src.type());
-    for (int x = 0 ; x < dest.rows ; ++x)
-    {
-        for (int y = 0 ; y < dest.cols ; ++y)
-        {
-            if(fgMask.at<uchar>(x,y))
-            {
-                int cluster_idx = labels.at<int>(i,0);
-                dest.at<Vec3b>(x,y)[0] = centers.at<float>(cluster_idx, 0);
-                dest.at<Vec3b>(x,y)[1] = centers.at<float>(cluster_idx, 1);
-                dest.at<Vec3b>(x,y)[2] = centers.at<float>(cluster_idx, 2);
-                ++i;
-            }
-            else
-            {
-                dest.at<Vec3b>(x,y)[0] = 0;
-                dest.at<Vec3b>(x,y)[1] = 0;
-                dest.at<Vec3b>(x,y)[2] = 0;
-            }
-        }
-    }
-
-    // Step 4 : Fill information
-    for(int i = 0 ; i < centers.rows ; ++i)
-    {
-        listMajorColors.at(i).color = Scalar(centers.at<float>(i, 0),
-                                             centers.at<float>(i, 1),
-                                             centers.at<float>(i, 2));
-
-        // TODO: Add Spacial information
-
-        // TODO: Add number of pixel of each major color
-    }
-
-    /*// Debug
-
-    imshow("src", src);
-    imshow("mask", fgMask);
-    imshow("dest", dest);
-    waitKey( 0 );*/
 }

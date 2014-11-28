@@ -104,22 +104,8 @@ void AdaptativeDatabase::main()
 
         for(string currentIdString : currentSequence.listFrameIds)
         {
-            Mat img = imread(folderUrl + currentIdString + ".png");
-            Mat mask = imread(folderUrl + currentIdString + "_mask.png");
-
-            if (img.empty() || mask.empty())
-            {
-                cout << "Error: cannot loading images (id=" << currentIdString << ")" << endl;
-                continue;
-            }
-
-            cvtColor(mask, mask,CV_BGR2GRAY);
-            threshold(mask, mask, 254, 255, THRESH_BINARY);// Convert to binary
-
-
             listSequenceFeatures.push_back(FeaturesElement());
-
-            histRGB(img, mask, listSequenceFeatures.back().histogramChannels);
+            Features::computeFeature(folderUrl + currentIdString, listSequenceFeatures.back());
         }
 
         bool newPers(true);
@@ -147,8 +133,13 @@ void AdaptativeDatabase::main()
 
                 if(number1 != number2)
                 {
-                    thresholdValue += distance(listSequenceFeatures.at(number1),
-                                               currentPerson.features.at(number2));
+                    Mat rowFeatureVector;
+
+                    Features::computeDistance(listSequenceFeatures.at(number1),
+                                              currentPerson.features.at(number2),
+                                              rowFeatureVector);
+
+                    thresholdValue += svm.predict(rowFeatureVector);
                 }
                 else
                 {
@@ -242,25 +233,6 @@ void AdaptativeDatabase::main()
     }
 }
 
-void AdaptativeDatabase::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)
-{
-    // Conversion to the right color space ???
-    // Size of the histogram
-    int histSize = HIST_SIZE; // bin size
-    float range[] = {0, 256}; // min max values
-    const float *ranges[] = {range};
-    // Extraction of the histograms
-    std::vector<cv::Mat> sourceChannels;
-    cv::split(frame, sourceChannels);
-    cv::calcHist(&sourceChannels[0], 1, 0, fgMask, histogramChannels[0], 1, &histSize, ranges, true, false );
-    cv::calcHist(&sourceChannels[1], 1, 0, fgMask, histogramChannels[1], 1, &histSize, ranges, true, false );
-    cv::calcHist(&sourceChannels[2], 1, 0, fgMask, histogramChannels[2], 1, &histSize, ranges, true, false );
-    // Normalize
-    normalize(histogramChannels[0], histogramChannels[0]);
-    normalize(histogramChannels[1], histogramChannels[1]);
-    normalize(histogramChannels[2], histogramChannels[2]);
-}
-
 void AdaptativeDatabase::loadMachineLearning()
 {
     // Loading file
@@ -300,19 +272,6 @@ void AdaptativeDatabase::loadMachineLearning()
     svm.train_auto(trainingData, trainingClasses, cv::Mat(), cv::Mat(), param);
 
     cout << "Training complete." << endl;
-}
-
-
-float AdaptativeDatabase::distance(const FeaturesElement &elem1, const FeaturesElement &elem2)
-{
-
-    Mat rowFeatureVector = cv::Mat::ones(1, 3, CV_32FC1);
-
-    rowFeatureVector.at<float>(0,0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
-    rowFeatureVector.at<float>(0,1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
-    rowFeatureVector.at<float>(0,2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
-
-    return svm.predict(rowFeatureVector);
 }
 
 void AdaptativeDatabase::debugShowImgs(const vector<string> &idsImgs, int nbPos)

@@ -9,16 +9,6 @@
 using namespace std;
 using namespace cv;
 
-
-#define NB_MAJOR_COLORS 3
-
-struct MajorColorElem
-{
-    Scalar color;
-    float position;
-    int weightColor; // Nb of element of this color
-};
-
 struct PairSample
 {
     string first;
@@ -50,10 +40,6 @@ private:
 
     // TODO: Pre-allocation
     vector<PairSample> listSamples;// TODO: Add more informations (which cam,...), the informations can be found on a file personId.txt
-
-    void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
-
-    void majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors);
 
     cv::Mat trainingData;
     cv::Mat trainingClasses;

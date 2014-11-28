@@ -9,7 +9,7 @@ using namespace std;
 
 int main()
 {
-    /*cout << "_________________________________" << endl;
+    cout << "_________________________________" << endl;
     cout << "Loading dataset..." << endl;
 
     Dataset dataset("/home/etienne/__A__/Data/Dataset/Set_2/");
@@ -36,13 +36,13 @@ int main()
     cout << "Testing..." << endl;
 
     // Test and plot results
-    dataset.test();*/
+    dataset.test();
 
-    cout << "Launch..." << endl;
+    /*cout << "Launch..." << endl;
     AdaptativeDatabase adaptativeDb("/home/etienne/__A__/Data/Dataset/Set_2/");
     adaptativeDb.main();
     adaptativeDb.plotEvaluation();
-    cout << "... End of processing" << endl;
+    cout << "... End of processing" << endl;*/
 
     return 0;
 }
