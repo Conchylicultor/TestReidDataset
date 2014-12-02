@@ -11,8 +11,6 @@
 
 #define NB_SELECTED_PAIR 10
 
-#define HIST_SIZE 100
-
 #define RECORD_SVM_TRAINING 0
 
 

@@ -7,7 +7,6 @@
 
 #include "utils.h"
 
-#define HIST_SIZE 100
 static const size_t minSequenceSize = 5;
 static const int nbInitialisationPairs = 10;
 static const int nbTestingPairs = 10;

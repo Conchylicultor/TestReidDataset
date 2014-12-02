@@ -1,8 +1,19 @@
 #include "features.h"
 
+#include <algorithm>
+#include <array>
+
+
 // Variables for features computation
 
 #define HIST_SIZE 100
+
+
+// Sort color elements
+bool sortMajorColors(MajorColorElem elem1, MajorColorElem elem2)
+{
+    return elem1.weightColor > elem2.weightColor;
+}
 
 void Features::computeFeature(const string &id, FeaturesElement &featuresElemOut)
 {
@@ -30,23 +41,26 @@ void Features::computeDistance(const FeaturesElement &elem1, const FeaturesEleme
 {
     int currentIndexFeature = 0;// Usefull if I change the order or remove a feature (don't need to change all the index)
 
-    rowFeatureVector = cv::Mat::ones(1, 3 + NB_MAJOR_COLORS, CV_32FC1);
-    //rowFeatureVector = cv::Mat::ones(1, NB_MAJOR_COLORS, CV_32FC1);
+    rowFeatureVector = cv::Mat::ones(1, 3 + NB_MAJOR_COLORS_KEEP, CV_32FC1);
+    //rowFeatureVector = cv::Mat::ones(1, NB_MAJOR_COLORS_KEEP, CV_32FC1);
 
     // Histogram
+
     rowFeatureVector.at<float>(0, currentIndexFeature+0) = compareHist(elem1.histogramChannels.at(0), elem2.histogramChannels.at(0), CV_COMP_BHATTACHARYYA);
     rowFeatureVector.at<float>(0, currentIndexFeature+1) = compareHist(elem1.histogramChannels.at(1), elem2.histogramChannels.at(1), CV_COMP_BHATTACHARYYA);
     rowFeatureVector.at<float>(0, currentIndexFeature+2) = compareHist(elem1.histogramChannels.at(2), elem2.histogramChannels.at(2), CV_COMP_BHATTACHARYYA);
     currentIndexFeature += 3;
 
-    // Major colors
-    for(MajorColorElem currentElem1 : elem1.majorColors)
+    // Major Colors
+
+    // Compute only with the most weigthed on
+    for (size_t i = 0; i < NB_MAJOR_COLORS_KEEP; ++i)
     {
-        float minDist = norm(currentElem1.color - elem2.majorColors.front().color);
+        float minDist = norm(elem1.majorColors.at(i).color - elem2.majorColors.front().color);
         float dist = 0.0;
-        for(MajorColorElem currentElem2 : elem2.majorColors)
+        for (size_t j = 0; j < NB_MAJOR_COLORS_KEEP; ++j)
         {
-            dist = norm(currentElem1.color - currentElem2.color);
+            dist = norm(elem1.majorColors.at(i).color - elem2.majorColors.at(j).color);
             if(dist < minDist)
             {
                 minDist = dist;
@@ -78,11 +92,11 @@ void Features::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histo
     normalize(histogramChannels[2], histogramChannels[2]);
 }
 
-void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors)
+void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS_EXTRACT> &listMajorColors)
 {
     Mat src = frame.clone();
 
-    // Step 1 : map the src to the samples
+    // Step 1: Map the src to the samples
     Mat samples(cv::countNonZero(fgMask), 3, CV_32F); // We only cluster the "white" pixels
 
     int i = 0;
@@ -100,8 +114,8 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
         }
     }
 
-    // Step 2 : apply kmeans to find labels and centers
-    int clusterCount = NB_MAJOR_COLORS;
+    // Step 2: Apply kmeans to find labels and centers
+    int clusterCount = NB_MAJOR_COLORS_EXTRACT;
     cv::Mat labels;
     int attempts = 5;
     cv::Mat centers;
@@ -111,7 +125,7 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
                attempts, cv::KMEANS_PP_CENTERS, centers);
 
 
-    // Step 3 : Fill information
+    // Step 3: Fill information
     for(i = 0 ; i < centers.rows ; ++i)
     {
         listMajorColors.at(i).color = Vec3b(centers.at<float>(i, 0),
@@ -132,7 +146,7 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
 
     }
 
-    // Step 4 : map the centers to the output
+    // Step 4: Map the centers to the output
     i = 0;
     Mat dest(src.size(), src.type());
     for (int x = 0 ; x < dest.rows ; ++x)
@@ -156,6 +170,9 @@ void Features::majorColors(const Mat &frame, const Mat &fgMask, array<MajorColor
             }
         }
     }
+
+    // Step 5: Sort major colors (in number of weight size)
+    std::sort(listMajorColors.begin(), listMajorColors.end(), sortMajorColors);
 
     // Debug
 

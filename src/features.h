@@ -10,7 +10,9 @@ using namespace cv;
 
 // Independent features
 
-#define NB_MAJOR_COLORS 3
+// Keep has to be lower or equal to extract
+#define NB_MAJOR_COLORS_EXTRACT 7
+#define NB_MAJOR_COLORS_KEEP 5
 
 struct MajorColorElem
 {
@@ -24,7 +26,7 @@ struct MajorColorElem
 struct FeaturesElement
 {
     array<Mat, 3> histogramChannels;
-    array<MajorColorElem, NB_MAJOR_COLORS> majorColors;
+    array<MajorColorElem, NB_MAJOR_COLORS_EXTRACT> majorColors;
 };
 
 class Features
@@ -34,7 +36,7 @@ public:
     static void computeDistance(const FeaturesElement &elem1, const FeaturesElement &elem2, Mat &rowFeatureVector);
 private:
     static void histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels);
-    static void majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS> &listMajorColors);
+    static void majorColors(const Mat &frame, const Mat &fgMask, array<MajorColorElem, NB_MAJOR_COLORS_EXTRACT> &listMajorColors);
 
 };
 
