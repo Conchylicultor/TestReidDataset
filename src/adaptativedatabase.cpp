@@ -11,6 +11,8 @@ static const size_t minSequenceSize = 5;
 static const int nbInitialisationPairs = 10;
 static const int nbTestingPairs = 10;
 
+static const float thresholdValueSamePerson = 0.5;
+
 AdaptativeDatabase::AdaptativeDatabase(string folderUrl_) :
     folderUrl(folderUrl_)
 {
@@ -122,7 +124,7 @@ void AdaptativeDatabase::main()
         // Select persons on the database and compute distance
         for(PersonElement currentPerson : listDatabase)
         {
-            float thresholdValue = 0.0;
+            float sumMeanPrediction = 0.0;
 
             // Randomly compare persons in the dataset
             for(int i = 0 ; i < nbTestingPairs ; ++i)
@@ -138,7 +140,7 @@ void AdaptativeDatabase::main()
                                               currentPerson.features.at(number2),
                                               rowFeatureVector);
 
-                    thresholdValue += svm.predict(rowFeatureVector);
+                    sumMeanPrediction += svm.predict(rowFeatureVector);
                 }
                 else
                 {
@@ -146,14 +148,14 @@ void AdaptativeDatabase::main()
                 }
             }
 
-            thresholdValue /= nbTestingPairs;
+            sumMeanPrediction /= nbTestingPairs;
 
             bool isErrorDebug = false;
 
             // Depending of the thresholdValue, reid or not
-            if(thresholdValue > 0.5)
+            if(sumMeanPrediction > thresholdValueSamePerson)
             {
-                cout << "Match (" << thresholdValue << ") : " << currentPerson.name;
+                cout << "Match (" << sumMeanPrediction << ") : " << currentPerson.name;
                 newPers = false;
 
                 if (currentPerson.name != currentSequence.name) // False positiv
@@ -175,7 +177,7 @@ void AdaptativeDatabase::main()
             }
             else
             {
-                cout << "Diff (" << thresholdValue << ")";
+                cout << "Diff (" << sumMeanPrediction << ")";
 
                 if (currentPerson.name == currentSequence.name) // False negativ
                 {

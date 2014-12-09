@@ -71,6 +71,8 @@ void Features::computeDistance(const FeaturesElement &elem1, const FeaturesEleme
     }
 
     // TODO: Add feature: camera id ; Add feature: time
+
+    // Feature Scaling
 }
 
 void Features::histRGB(const Mat &frame, const Mat &fgMask, array<Mat, 3> &histogramChannels)
